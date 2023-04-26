@@ -27,7 +27,8 @@ public partial record Message(
     IReadOnlyList<User> MentionedUsers,
     MessageReference? Reference,
     Message? ReferencedMessage,
-    Interaction? Interaction) : IHasId
+    Interaction? Interaction,
+    String? MessageComponents) : IHasId
 {
     public bool IsReplyLike => Kind == MessageKind.Reply || Interaction is not null;
 
@@ -145,6 +146,12 @@ public partial record Message
         var messageReference = json.GetPropertyOrNull("message_reference")?.Pipe(MessageReference.Parse);
         var referencedMessage = json.GetPropertyOrNull("referenced_message")?.Pipe(Parse);
         var interaction = json.GetPropertyOrNull("interaction")?.Pipe(Interaction.Parse);
+        String? messageComponents = null;
+        if (json.GetPropertyOrNull("components").GetValueOrDefault().GetArrayLength() > 0)
+        {
+            messageComponents = json.GetPropertyOrNull("components")?.GetRawText();
+        }
+        
 
         return new Message(
             id,
@@ -163,7 +170,8 @@ public partial record Message
             mentionedUsers,
             messageReference,
             referencedMessage,
-            interaction
+            interaction,
+            messageComponents
         );
     }
 }

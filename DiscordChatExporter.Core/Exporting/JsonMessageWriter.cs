@@ -42,12 +42,13 @@ internal class JsonMessageWriter : MessageWriter
         _writer.WriteStartObject();
 
         _writer.WriteString("id", user.Id.ToString());
-        _writer.WriteString("name", user.Name);
-        _writer.WriteString("discriminator", user.DiscriminatorFormatted);
-        _writer.WriteString("nickname", Context.TryGetMember(user.Id)?.Nick ?? user.Name);
-        _writer.WriteString("color", Context.TryGetUserColor(user.Id)?.ToHex());
-        _writer.WriteBoolean("isBot", user.IsBot);
+        _writer.WriteString("username", user.Name);
+        // _writer.WriteString("discriminator", user.DiscriminatorFormatted);
+        // _writer.WriteString("nickname", Context.TryGetMember(user.Id)?.Nick ?? user.Name);
+        // _writer.WriteString("color", Context.TryGetUserColor(user.Id)?.ToHex());
+        // _writer.WriteBoolean("isBot", user.IsBot);
 
+        /*
         _writer.WriteString(
             "avatarUrl",
             await Context.ResolveAssetUrlAsync(
@@ -55,6 +56,7 @@ internal class JsonMessageWriter : MessageWriter
                 cancellationToken
             )
         );
+        */
 
         _writer.WriteEndObject();
         await _writer.FlushAsync(cancellationToken);
@@ -67,6 +69,8 @@ internal class JsonMessageWriter : MessageWriter
         _writer.WriteStartObject();
 
         _writer.WriteString("name", embedAuthor.Name);
+
+        /*
         _writer.WriteString("url", embedAuthor.Url);
 
         if (!string.IsNullOrWhiteSpace(embedAuthor.IconUrl))
@@ -76,6 +80,7 @@ internal class JsonMessageWriter : MessageWriter
                 await Context.ResolveAssetUrlAsync(embedAuthor.IconProxyUrl ?? embedAuthor.IconUrl, cancellationToken)
             );
         }
+        */
 
         _writer.WriteEndObject();
         await _writer.FlushAsync(cancellationToken);
@@ -110,6 +115,7 @@ internal class JsonMessageWriter : MessageWriter
 
         _writer.WriteString("text", embedFooter.Text);
 
+        /*
         if (!string.IsNullOrWhiteSpace(embedFooter.IconUrl))
         {
             _writer.WriteString(
@@ -117,6 +123,7 @@ internal class JsonMessageWriter : MessageWriter
                 await Context.ResolveAssetUrlAsync(embedFooter.IconProxyUrl ?? embedFooter.IconUrl, cancellationToken)
             );
         }
+        */
 
         _writer.WriteEndObject();
         await _writer.FlushAsync(cancellationToken);
@@ -143,8 +150,8 @@ internal class JsonMessageWriter : MessageWriter
         _writer.WriteStartObject();
 
         _writer.WriteString("title", await FormatMarkdownAsync(embed.Title ?? "", cancellationToken));
-        _writer.WriteString("url", embed.Url);
-        _writer.WriteString("timestamp", embed.Timestamp);
+        // _writer.WriteString("url", embed.Url);
+        // _writer.WriteString("timestamp", embed.Timestamp);
         _writer.WriteString("description", await FormatMarkdownAsync(embed.Description ?? "", cancellationToken));
 
         if (embed.Color is not null)
@@ -156,16 +163,19 @@ internal class JsonMessageWriter : MessageWriter
             await WriteEmbedAuthorAsync(embed.Author, cancellationToken);
         }
 
+        /*
         if (embed.Thumbnail is not null)
         {
             _writer.WritePropertyName("thumbnail");
             await WriteEmbedImageAsync(embed.Thumbnail, cancellationToken);
         }
+        */
 
         if (embed.Image is not null)
         {
-            _writer.WritePropertyName("image");
-            await WriteEmbedImageAsync(embed.Image, cancellationToken);
+            _writer.WriteBoolean("image", true);
+            // _writer.WritePropertyName("image");
+            // await WriteEmbedImageAsync(embed.Image, cancellationToken);
         }
 
         if (embed.Footer is not null)
@@ -175,6 +185,7 @@ internal class JsonMessageWriter : MessageWriter
         }
 
         // Images
+        /*
         _writer.WriteStartArray("images");
 
         foreach (var image in embed.Images)
@@ -189,6 +200,7 @@ internal class JsonMessageWriter : MessageWriter
             await WriteEmbedFieldAsync(field, cancellationToken);
 
         _writer.WriteEndArray();
+        */
 
         _writer.WriteEndObject();
         await _writer.FlushAsync(cancellationToken);
@@ -251,11 +263,23 @@ internal class JsonMessageWriter : MessageWriter
 
         // Metadata
         _writer.WriteString("id", message.Id.ToString());
-        _writer.WriteString("type", message.Kind.ToString());
+        if (message.Kind != MessageKind.Default)
+        {
+            _writer.WriteString("type", message.Kind.ToString());
+        }
         _writer.WriteString("timestamp", message.Timestamp);
-        _writer.WriteString("timestampEdited", message.EditedTimestamp);
-        _writer.WriteString("callEndedTimestamp", message.CallEndedTimestamp);
-        _writer.WriteBoolean("isPinned", message.IsPinned);
+        if (message.EditedTimestamp is not null)
+        {
+            _writer.WriteString("timestampEdited", message.EditedTimestamp);
+        }
+        if (message.CallEndedTimestamp is not null)
+        {
+            _writer.WriteString("callEndedTimestamp", message.CallEndedTimestamp);
+        }
+        if (message.IsPinned)
+        {
+            _writer.WriteBoolean("isPinned", message.IsPinned);
+        }
 
         // Content
         if (message.Kind.IsSystemNotification())
@@ -272,78 +296,95 @@ internal class JsonMessageWriter : MessageWriter
         await WriteUserAsync(message.Author, cancellationToken);
 
         // Attachments
-        _writer.WriteStartArray("attachments");
-
-        foreach (var attachment in message.Attachments)
+        /*
+        if (message.Attachments.Count > 0)
         {
-            _writer.WriteStartObject();
+            _writer.WriteStartArray("attachments");
 
-            _writer.WriteString("id", attachment.Id.ToString());
-            _writer.WriteString("url", await Context.ResolveAssetUrlAsync(attachment.Url, cancellationToken));
-            _writer.WriteString("fileName", attachment.FileName);
-            _writer.WriteNumber("fileSizeBytes", attachment.FileSize.TotalBytes);
+            foreach (var attachment in message.Attachments)
+            {
+                _writer.WriteStartObject();
 
-            _writer.WriteEndObject();
+                _writer.WriteString("id", attachment.Id.ToString());
+                _writer.WriteString("url", await Context.ResolveAssetUrlAsync(attachment.Url, cancellationToken));
+                _writer.WriteString("fileName", attachment.FileName);
+                _writer.WriteNumber("fileSizeBytes", attachment.FileSize.TotalBytes);
+
+                _writer.WriteEndObject();
+            }
+
+            _writer.WriteEndArray();
         }
-
-        _writer.WriteEndArray();
-
+        */
+        
         // Embeds
-        _writer.WriteStartArray("embeds");
+        if (message.Embeds.Count > 0)
+        {
+            _writer.WriteStartArray("embeds");
 
-        foreach (var embed in message.Embeds)
-            await WriteEmbedAsync(embed, cancellationToken);
+            foreach (var embed in message.Embeds)
+                await WriteEmbedAsync(embed, cancellationToken);
 
-        _writer.WriteEndArray();
-
+            _writer.WriteEndArray();
+        }
+        
         // Stickers
-        _writer.WriteStartArray("stickers");
-
-        foreach (var sticker in message.Stickers)
+        if (message.Stickers.Count > 0)
         {
-            _writer.WriteStartObject();
+            _writer.WriteStartArray("stickers");
 
-            _writer.WriteString("id", sticker.Id.ToString());
-            _writer.WriteString("name", sticker.Name);
-            _writer.WriteString("format", sticker.Format.ToString());
-            _writer.WriteString("sourceUrl", await Context.ResolveAssetUrlAsync(sticker.SourceUrl, cancellationToken));
+            foreach (var sticker in message.Stickers)
+            {
+                _writer.WriteStartObject();
 
-            _writer.WriteEndObject();
+                _writer.WriteString("id", sticker.Id.ToString());
+                _writer.WriteString("name", sticker.Name);
+                _writer.WriteString("format", sticker.Format.ToString());
+                _writer.WriteString("sourceUrl", await Context.ResolveAssetUrlAsync(sticker.SourceUrl, cancellationToken));
+
+                _writer.WriteEndObject();
+            }
+
+            _writer.WriteEndArray();
         }
-
-        _writer.WriteEndArray();
-
+        
         // Reactions
-        _writer.WriteStartArray("reactions");
-
-        foreach (var reaction in message.Reactions)
+        if (message.Reactions.Count > 0)
         {
-            _writer.WriteStartObject();
+            _writer.WriteStartArray("reactions");
 
-            // Emoji
-            _writer.WriteStartObject("emoji");
-            _writer.WriteString("id", reaction.Emoji.Id.ToString());
-            _writer.WriteString("name", reaction.Emoji.Name);
-            _writer.WriteString("code", reaction.Emoji.Code);
-            _writer.WriteBoolean("isAnimated", reaction.Emoji.IsAnimated);
-            _writer.WriteString("imageUrl", await Context.ResolveAssetUrlAsync(reaction.Emoji.ImageUrl, cancellationToken));
-            _writer.WriteEndObject();
+            foreach (var reaction in message.Reactions)
+            {
+                _writer.WriteStartObject();
 
-            _writer.WriteNumber("count", reaction.Count);
+                // Emoji
+                _writer.WriteStartObject("emoji");
+                _writer.WriteString("id", reaction.Emoji.Id.ToString());
+                _writer.WriteString("name", reaction.Emoji.Name);
+                _writer.WriteString("code", reaction.Emoji.Code);
+                // _writer.WriteBoolean("isAnimated", reaction.Emoji.IsAnimated);
+                // _writer.WriteString("imageUrl", await Context.ResolveAssetUrlAsync(reaction.Emoji.ImageUrl, cancellationToken));
+                _writer.WriteEndObject();
 
-            _writer.WriteEndObject();
+                _writer.WriteNumber("count", reaction.Count);
+
+                _writer.WriteEndObject();
+            }
+
+            _writer.WriteEndArray();
         }
-
-        _writer.WriteEndArray();
-
+        
         // Mentions
-        _writer.WriteStartArray("mentions");
+        if (message.MentionedUsers.Count > 0)
+        {
+            _writer.WriteStartArray("mentions");
 
-        foreach (var user in message.MentionedUsers)
-            await WriteUserAsync(user, cancellationToken);
+            foreach (var user in message.MentionedUsers)
+                await WriteUserAsync(user, cancellationToken);
 
-        _writer.WriteEndArray();
-
+            _writer.WriteEndArray();
+        }
+        
         // Message reference
         if (message.Reference is not null)
         {
@@ -366,6 +407,12 @@ internal class JsonMessageWriter : MessageWriter
             await WriteUserAsync(message.Interaction.User, cancellationToken);
 
             _writer.WriteEndObject();
+        }
+
+        if (message.MessageComponents is not null)
+        {
+            _writer.WritePropertyName("components");
+            _writer.WriteRawValue(message.MessageComponents);
         }
 
         _writer.WriteEndObject();
