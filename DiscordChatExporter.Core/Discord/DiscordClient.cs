@@ -326,6 +326,56 @@ public class DiscordClient
         return response.EnumerateArray().Select(Message.Parse).LastOrDefault();
     }
 
+    string[] commandsToSkip = {
+        // "bonus",
+        // "collection display",
+        // "collection divorce",
+        // "collection give",
+        "commandsearch",
+        "daily",
+        // "disable list",
+        "ha",
+        "help",
+        "hg",
+        "hx",
+        "ima",
+        // "kakera",
+        "kakera dailyk",
+        // "kakeraloots display",
+        // "kakeraloots get",
+        "kakeraloots info",
+        // "kakeratower display",
+        // "keys bonuskeysup",
+        "ma",
+        "mg",
+        // "mm",
+        "mx",
+        "overview",
+        "poke autorelease",
+        "poke pokedex",
+        "pokemon",
+        "pokeslot",
+        "profile display",
+        "pug",
+        "rolls",
+        "rollsutil resetclaimtimer",
+        "rollsutil rolls",
+        // "rollsutil usestack",
+        // "top",
+        "tu",
+        "tuto",
+        "wa",
+        "wg",
+        "whois",
+        // "wish add",
+        // "wish clear",
+        // "wish firstwish",
+        // "wish list",
+        // "wish remove",
+        // "wl",
+        "wx"
+    };
+
     public async IAsyncEnumerable<Message> GetMessagesAsync(
         Snowflake channelId,
         Snowflake? after = null,
@@ -364,6 +414,28 @@ public class DiscordClient
             // Break if there are no messages (can happen if messages are deleted during execution)
             if (!messages.Any())
                 yield break;
+
+            for (var i = 0; i < messages.Length; i++)
+            {
+                Message m = messages[i];
+                if (m.Interaction is null)
+                {
+                    continue;
+                }
+                if (Array.IndexOf(commandsToSkip, m.Interaction.Name) >= 0) {
+                    continue;
+                }
+                Interaction interaction = m.Interaction;
+                var messageId = m.Id;
+                var interactionUrl = new UrlBuilder()
+                    .SetPath($"channels/{channelId}/messages/{messageId}/interaction-data")
+                    .Build();
+
+                var interactionResponse = await GetJsonResponseAsync(interactionUrl, cancellationToken);
+                Interaction interactionWithData = interaction with { Data = interactionResponse.GetRawText() };
+                messages[i] = m with { Interaction = interactionWithData };
+                System.Threading.Thread.Sleep(100);
+            }
 
             foreach (var message in messages)
             {

@@ -402,6 +402,11 @@ internal class JsonMessageWriter : MessageWriter
 
             _writer.WriteString("id", message.Interaction.Id.ToString());
             _writer.WriteString("name", message.Interaction.Name);
+            if (message.Interaction.Data is not null)
+            {
+                _writer.WritePropertyName("data");
+                _writer.WriteRawValue(message.Interaction.Data);
+            }
 
             _writer.WritePropertyName("user");
             await WriteUserAsync(message.Interaction.User, cancellationToken);
